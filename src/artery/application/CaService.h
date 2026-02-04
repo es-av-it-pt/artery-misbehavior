@@ -60,9 +60,13 @@ class CaService : public ItsG5BaseService
 		vanetza::units::Velocity mSpeedDelta;
 		bool mDccRestriction;
 		bool mFixedRate;
+		// Add member variables for the parameters: isAttacker (bool) and falsificationOffset (Length)
+		bool mIsAttacker;
+		vanetza::units::Length mFalsificationOffset;
 };
 
-vanetza::asn1::Cam createCooperativeAwarenessMessage(const VehicleDataProvider&, uint16_t genDeltaTime);
+// Updated the signature of the helper function to accept an offset argument.
+vanetza::asn1::Cam createCooperativeAwarenessMessage(const VehicleDataProvider&, uint16_t genDeltaTime, vanetza::units::Length offset = 0.0 * vanetza::units::si::meter);
 void addLowFrequencyContainer(vanetza::asn1::Cam&, unsigned pathHistoryLength = 0);
 
 } // namespace artery

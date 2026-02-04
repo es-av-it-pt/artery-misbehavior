@@ -96,6 +96,10 @@ void CaService::initialize()
 
 	// look up primary channel for CA
 	mPrimaryChannel = getFacilities().get_const<MultiChannelPolicy>().primaryChannel(vanetza::aid::CA);
+
+	// Read attack parameters
+	mIsAttacker = par("isAttacker");
+	mFalsificationOffset = par("falsificationOffset").doubleValue() * vanetza::units::si::meter;
 }
 
 void CaService::trigger()
@@ -111,6 +115,9 @@ void CaService::indicate(const vanetza::btp::DataIndication& ind, std::unique_pt
 	Asn1PacketVisitor<vanetza::asn1::Cam> visitor;
 	const vanetza::asn1::Cam* cam = boost::apply_visitor(visitor, *packet);
 	if (cam && cam->validate()) {
+		EV_INFO << "Received CAM from Station ID: " << (*cam)->header.stationID << "\n"
+				<< "  Encoded latitude: " << (*cam)->cam.camParameters.basicContainer.referencePosition.latitude << "\n"
+				<< "  Encoded longitude: " << (*cam)->cam.camParameters.basicContainer.referencePosition.longitude << endl;
 		CaObject obj = visitor.shared_wrapper;
 		emit(scSignalCamReceived, &obj);
 		mLocalDynamicMap->updateAwareness(obj);
@@ -157,10 +164,30 @@ bool CaService::checkSpeedDelta() const
 	return abs(mLastCamSpeed - mVehicleDataProvider->speed()) > mSpeedDelta;
 }
 
+// update sendCam to pass the calculated offset (if attacker), in meter, to the message creation function and update logging to show real vs fake position
 void CaService::sendCam(const SimTime& T_now)
 {
 	uint16_t genDeltaTimeMod = countTaiMilliseconds(mTimer->getTimeFor(mVehicleDataProvider->updated()));
-	auto cam = createCooperativeAwarenessMessage(*mVehicleDataProvider, genDeltaTimeMod);
+	vanetza::units::Length offset = mIsAttacker ? mFalsificationOffset : 0.0 * vanetza::units::si::meter;
+	auto cam = createCooperativeAwarenessMessage(*mVehicleDataProvider, genDeltaTimeMod, offset);
+
+	// Log CAM generation details
+	if (mIsAttacker) {
+		// Calculate fake position for logging (mirroring what's done in message creation)
+		double R = 6371000.0; // Earth radius in meters
+		double delta_deg = (offset.value() / R) * (180.0 / 3.1415926535);
+		auto fakeLat = mVehicleDataProvider->latitude() + delta_deg * vanetza::units::degree;
+		
+		EV_INFO << "ATTACKER: Generating Falsified CAM for Station ID: " << mVehicleDataProvider->station_id() << "\n"
+				<< "  Real Position: " << mVehicleDataProvider->longitude().value() << ", " << mVehicleDataProvider->latitude().value() << "\n"
+				<< "  Fake Position: " << mVehicleDataProvider->longitude().value() << ", " << fakeLat.value() << "\n"
+				<< "  Offset: " << offset.value() << " m\n";
+	} else {
+		EV_INFO << "Generating CAM for Station ID: " << mVehicleDataProvider->station_id() << "\n"
+				<< "  Position: " << mVehicleDataProvider->longitude().value() << ", " << mVehicleDataProvider->latitude().value() << "\n"
+				<< "  Speed: " << mVehicleDataProvider->speed().value() << "\n"
+				<< "  Heading: " << mVehicleDataProvider->heading().value() << endl;
+	}
 
 	mLastCamPosition = mVehicleDataProvider->position();
 	mLastCamSpeed = mVehicleDataProvider->speed();
@@ -205,7 +232,7 @@ SimTime CaService::genCamDcc()
 	return std::min(mGenCamMax, std::max(mGenCamMin, dcc));
 }
 
-vanetza::asn1::Cam createCooperativeAwarenessMessage(const VehicleDataProvider& vdp, uint16_t genDeltaTime)
+vanetza::asn1::Cam createCooperativeAwarenessMessage(const VehicleDataProvider& vdp, uint16_t genDeltaTime, vanetza::units::Length offset) // Pass the offset to the CAM (for attack)
 {
 	vanetza::asn1::Cam message;
 
@@ -223,7 +250,15 @@ vanetza::asn1::Cam createCooperativeAwarenessMessage(const VehicleDataProvider& 
 	basic.referencePosition.altitude.altitudeValue = AltitudeValue_unavailable;
 	basic.referencePosition.altitude.altitudeConfidence = AltitudeConfidence_unavailable;
 	basic.referencePosition.longitude = round(vdp.longitude(), microdegree) * Longitude_oneMicrodegreeEast;
-	basic.referencePosition.latitude = round(vdp.latitude(), microdegree) * Latitude_oneMicrodegreeNorth;
+	
+	// apply the geometric offset (convert meters → degrees) to the vehicle's latitude (simple 1D offset approximation) when generating the reference position field in the CAM packet.
+	auto latitude = vdp.latitude();
+	if (offset.value() != 0.0) {
+		double R = 6371000.0;
+		double delta_deg = (offset.value() / R) * (180.0 / 3.1415926535);
+		latitude += delta_deg * vanetza::units::degree;
+	}
+	basic.referencePosition.latitude = round(latitude, microdegree) * Latitude_oneMicrodegreeNorth;
 	basic.referencePosition.positionConfidenceEllipse.semiMajorOrientation = HeadingValue_unavailable;
 	basic.referencePosition.positionConfidenceEllipse.semiMajorConfidence =
 			SemiAxisLength_unavailable;

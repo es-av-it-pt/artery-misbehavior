@@ -45,4 +45,8 @@ simple CaService like ItsG5Service
 
         // length of path history
         volatile int pathHistoryLength = default(23);
+
+        // Position falsification attack configuration
+        bool isAttacker = default(false);
+        double falsificationOffset @unit(m) = default(10.0m);
 }
