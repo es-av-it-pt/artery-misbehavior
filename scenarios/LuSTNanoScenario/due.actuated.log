@@ -1,0 +1,19 @@
+***Starting server on port 9999 ***
+Loading net-file from 'lust.net.xml' ... done (26ms).
+Loading additional-files from 'vtypes.add.xml' ... done (0ms).
+Loading additional-files from 'lust.add.xml' ... done (9ms).
+Loading additional-files from 'lust.poly.xml' ... done (16ms).
+Loading done.
+Simulation started with time: 0.00.
+Simulation ended at time: 24212.60
+Reason: TraCI requested termination.
+Performance: 
+ Duration: 1126.65s
+ TraCI-Duration: 968.37s
+ Real time factor: 21.4907
+ UPS: 1209.367037
+Vehicles: 
+ Inserted: 1406 (Loaded: 1452)
+ Running: 29
+ Waiting: 0
+
