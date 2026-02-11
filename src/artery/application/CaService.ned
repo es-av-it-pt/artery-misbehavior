@@ -48,5 +48,15 @@ simple CaService like ItsG5Service
 
         // Position falsification attack configuration
         bool isAttacker = default(false);
+        int misbehaviorType = default(0); // 0=None, 1=ConstPos, etc.
         double falsificationOffset @unit(m) = default(10.0m);
+        double falsificationSpeedOffset @unit(mps) = default(0.0mps);
+        double doSProbability = default(0.5);
+        double parVar = default(-1.0); // -1.0 means randomized per node
+        int dosMultipleFreq = default(4); // F2MD default: 4x frequency for DoS
+        int replaySeqNum = default(6); // F2MD default: replay same victim 6 times
+        int victimSelection = default(0); // 0: Random, 1: Closest
+        int sybilVehNum = default(4); // F2MD default: 4 ghost vehicles
+        double attackProbability = default(1.0); // 1.0 = Always attach, 0.5 = 50% chance
+        double startAttack = default(10.0); // F2MD default: start attack at T=10s
 }

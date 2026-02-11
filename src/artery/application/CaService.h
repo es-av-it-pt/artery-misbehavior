@@ -1,8 +1,8 @@
 /*
-* Artery V2X Simulation Framework
-* Copyright 2014-2019 Raphael Riebl et al.
-* Licensed under GPLv2, see COPYING file for detailed license and warranty terms.
-*/
+ * Artery V2X Simulation Framework
+ * Copyright 2014-2019 Raphael Riebl et al.
+ * Licensed under GPLv2, see COPYING file for detailed license and warranty terms.
+ */
 
 #ifndef ARTERY_CASERVICE_H_
 #define ARTERY_CASERVICE_H_
@@ -10,6 +10,7 @@
 #include "artery/application/ItsG5BaseService.h"
 #include "artery/utility/Channel.h"
 #include "artery/utility/Geometry.h"
+#include "artery/misbehavior/attacks/MdAttack.h" // Added Misbehavior Module
 #include <vanetza/asn1/cam.hpp>
 #include <vanetza/btp/data_interface.hpp>
 #include <vanetza/units/angle.hpp>
@@ -60,13 +61,20 @@ class CaService : public ItsG5BaseService
 		vanetza::units::Velocity mSpeedDelta;
 		bool mDccRestriction;
 		bool mFixedRate;
-		// Add member variables for the parameters: isAttacker (bool) and falsificationOffset (Length)
-		bool mIsAttacker;
-		vanetza::units::Length mFalsificationOffset;
+		
+        // Misbehavior Module Integration
+        bool mIsAttacker;
+        misbehavior::MdAttack mMdAttack;
 };
 
-// Updated the signature of the helper function to accept an offset argument.
-vanetza::asn1::Cam createCooperativeAwarenessMessage(const VehicleDataProvider&, uint16_t genDeltaTime, vanetza::units::Length offset = 0.0 * vanetza::units::si::meter);
+// Updated signature to accept AttackResult instead of single offset
+vanetza::asn1::Cam createCooperativeAwarenessMessage(const VehicleDataProvider&, 
+                                                     uint16_t genDeltaTime, 
+                                                     const misbehavior::AttackResult& attackResult);
+
+// Overload for honest vehicles (creates empty AttackResult)
+vanetza::asn1::Cam createCooperativeAwarenessMessage(const VehicleDataProvider&, uint16_t genDeltaTime);
+
 void addLowFrequencyContainer(vanetza::asn1::Cam&, unsigned pathHistoryLength = 0);
 
 } // namespace artery
