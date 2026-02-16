@@ -265,7 +265,7 @@ bool TrafficJamAhead::checkSlowVehiclesAheadByV2X() const
 
         const auto& bc = msg->cam.camParameters.basicContainer;
         const auto& hfc = msg->cam.camParameters.highFrequencyContainer;
-        if (hfc.present == HighFrequencyContainer_PR_basicVehicleContainerHighFrequency) {
+        if (hfc.present == Vanetza_ITS2_HighFrequencyContainer_PR_basicVehicleContainerHighFrequency) {
             const auto& bvc = hfc.choice.basicVehicleContainerHighFrequency;
             const auto& vdp = *mVdp;
             if (bvc.speed.speedValue == SpeedValue_unavailable ||
