@@ -20,8 +20,12 @@ Author: Lara CODECA [codeca@gmail.com]
     </output>
     
     <time>
-        <begin value="0"/>
-        <end value="86400"/>
+        <begin value="0"/> 
+        <!-- <end value="3600"/> -->
+        <!--  
+        Uncomment for 24h run; comment the previous end value
+        -->
+        <end value="86400"/> 
         <step-length value="0.1"/>
     </time>
 
